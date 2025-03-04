@@ -12,7 +12,10 @@ const handleResponse = async (response: Response) => {
 };
 
 // Generic fetch function with authentication
-const fetchWithAuth = async (endpoint: string, options: RequestInit = {}) => {
+const fetchWithAuth = async (
+  endpoint: string,
+  options: RequestInit = {}
+): Promise<any> => {
   try {
     const response = await fetch(`${BASE_URL}${endpoint}`, {
       headers: {
