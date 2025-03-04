@@ -15,11 +15,22 @@ import {
 import { motion } from "framer-motion"
 import { useState, useEffect } from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { useAuth } from "@/context/auth-context"
+import { useRouter } from "next/navigation"
 
 export default function Home() {
   const [scrollY, setScrollY] = useState(0)
   const [isVisible, setIsVisible] = useState(false)
   const [activeTab, setActiveTab] = useState("personal")
+  const { user, loading } = useAuth()
+  const router = useRouter()
+
+  useEffect(() => {
+    if (!loading && user) {
+      router.push('/conversations')
+    }
+  }, [loading, user, router])
+
 
   useEffect(() => {
     const handleScroll = () => {
@@ -36,6 +47,10 @@ export default function Home() {
       clearTimeout(timer)
     }
   }, [])
+
+  if (loading) {
+    return null
+  }
 
   const fadeIn = {
     hidden: { opacity: 0, y: 20 },

@@ -9,7 +9,7 @@ import { AuthProvider } from '@/context/auth-context';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'Messenger - Modern Messaging App',
+  title: 'PulseChat - Fast, modern messaging',
   description: 'A modern, full-stack messaging application',
 };
 

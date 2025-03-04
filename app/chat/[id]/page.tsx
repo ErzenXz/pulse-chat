@@ -15,6 +15,7 @@ import { toast } from "sonner"
 import { getInitials } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
 import io from "socket.io-client"
+import AuthGuard from "@/app/middlewares/auth.guard"
 
 interface Message {
   id: string
@@ -34,7 +35,7 @@ export default function ChatPage() {
   const [page, setPage] = useState(1)
   const [hasMore, setHasMore] = useState(true)
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
-  const [isOnline, setIsOnline] = useState(true) // Simulated online status
+  const [isOnline, setIsOnline] = useState(true)
   const { user } = useAuth()
   const router = useRouter()
   const socketRef = useRef<any>(null)
@@ -57,7 +58,6 @@ export default function ChatPage() {
 
     socketRef.current.on("connect", () => {
       console.log("Socket connected")
-      socketRef.current.emit("joinRoom", id)
     })
 
     // Only fetch all messages when receiving refreshMessages event
@@ -138,10 +138,10 @@ export default function ChatPage() {
           const newMessage: Message = {
             id: Date.now().toString(),
             content: formattedContent,
-            senderId: user?.id || "",
+            senderId: user?.id ?? "",
             receiverId: id,
             timestamp: new Date().toISOString(),
-            username: user?.username || "",
+            username: user?.username ?? "",
           }
 
           setMessages((prev) => [...prev, newMessage])
@@ -160,10 +160,10 @@ export default function ChatPage() {
         const newMessage: Message = {
           id: Date.now().toString(), // Temporary ID
           content,
-          senderId: user?.id || "",
+          senderId: user?.id ?? "",
           receiverId: id,
           timestamp: new Date().toISOString(),
-          username: user?.username || "",
+          username: user?.username ?? "",
         }
 
         setMessages((prev) => [...prev, newMessage])

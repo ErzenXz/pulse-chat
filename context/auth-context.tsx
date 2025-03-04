@@ -64,6 +64,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       return true;
     } catch (error) {
       console.error('Auth check failed:', error);
+      const currentUrl = encodeURIComponent(window.location.href);
+      window.location.href = `https://auth.erzen.tk?return_to=${currentUrl}`;
       return false;
     }
   };
@@ -71,12 +73,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const refreshToken = async (): Promise<boolean> => {
     try {
       const response = await fetch('https://apis.erzen.tk/v1/auth/refresh', {
-        method: 'POST',
-        credentials: 'include',
+      method: 'POST',
+      credentials: 'include',
       });
 
       if (!response.ok) {
-        throw new Error('Token refresh failed');
+      throw new Error('Token refresh failed');
       }
 
       const data = await response.json();
@@ -86,7 +88,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       return true;
     } catch (error) {
       console.error('Token refresh error:', error);
-      logout();
+      const currentUrl = encodeURIComponent(window.location.href);
+      window.location.href = `https://auth.erzen.tk?return_to=${currentUrl}`;
       return false;
     }
   };
