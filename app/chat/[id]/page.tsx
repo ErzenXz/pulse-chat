@@ -3,12 +3,12 @@
 import { useEffect, useState, useRef } from "react"
 import { useParams, useRouter, useSearchParams } from "next/navigation"
 import { useAuth } from "@/context/auth-context"
-import { getMessages, sendMessage, deleteMessage, uploadFile } from "@/lib/api"
+import { getMessages, sendMessage, deleteMessage, uploadFile, getUserStatus } from "@/lib/api"
 import { ChatWindow } from "@/components/chat-window"
 import { MessageInput } from "@/components/message-input"
 import { ImageModal } from "@/components/image-modal"
 import { Button } from "@/components/ui/button"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ArrowLeft, Video, Phone, Info } from "lucide-react"
 import { generateUUID } from "@/lib/utils"
 import { toast } from "sonner"
@@ -30,25 +30,40 @@ export default function ChatPage() {
   const { id } = useParams<{ id: string }>()
   const searchParams = useSearchParams()
   const [recipientUsername, setRecipientUsername] = useState<string>("")
+  const [recipientFullname, setRecipientFullname] = useState<string>("")
+  const [recipientPicture, setRecipientPicture] = useState<string>("")
   const [messages, setMessages] = useState<Message[]>([])
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(1)
   const [hasMore, setHasMore] = useState(true)
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
-  const [isOnline, setIsOnline] = useState(true)
+  const [isOnline, setIsOnline] = useState(false)
   const { user } = useAuth()
   const router = useRouter()
   const socketRef = useRef<any>(null)
 
   useEffect(() => {
+
+    const initialize = async (username: string) => {
+      setRecipientUsername(username);
+      
+      try {
+        const data = await getUserStatus(username);
+        setIsOnline(data.activityStatus);
+        setRecipientFullname(data.fullName);
+        setRecipientUsername(data.username);
+        setRecipientPicture(data.profilePicture);
+      } catch (error) {
+        console.error("Failed to get user status:", error);
+      }
+    };
+
     const username = searchParams.get("username")
     if (username) {
-      setRecipientUsername(username)
+      initialize(username);
     }
 
-    // Initial fetch of messages
-    fetchMessages()
-
+    // Remove initial fetch, let socket handle it
     socketRef.current = io("https://apis.erzen.tk/messaging", {
       transports: ["websocket"],
       query: {
@@ -58,9 +73,10 @@ export default function ChatPage() {
 
     socketRef.current.on("connect", () => {
       console.log("Socket connected")
+      // Fetch messages only after socket connection
+      fetchMessages(1, true)
     })
 
-    // Only fetch all messages when receiving refreshMessages event
     socketRef.current.on("refreshMessages", () => {
       fetchMessages(1, true)
     })
@@ -68,6 +84,8 @@ export default function ChatPage() {
     socketRef.current.on("error", (error: any) => {
       console.error("Socket error:", error)
     })
+
+
 
     return () => {
       if (socketRef.current) {
@@ -197,7 +215,7 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="flex flex-col h-screen bg-background">
+    <div className="flex flex-col h-screen bg-background overflow-x-hidden">
       <header className="border-b py-3 px-4 sticky top-0 z-10 bg-background/80 backdrop-blur-sm">
         <div className="flex items-center justify-between">
           <div className="flex items-center">
@@ -214,8 +232,12 @@ export default function ChatPage() {
             <div className="flex items-center">
               <div className="relative">
                 <Avatar className="h-10 w-10 border">
+                  <AvatarImage
+                  src={recipientPicture}
+                  alt={recipientFullname}
+                  />
                   <AvatarFallback className="bg-primary/10 text-primary">
-                    {getInitials(recipientUsername)}
+                  {getInitials(recipientFullname)}
                   </AvatarFallback>
                 </Avatar>
                 {isOnline && (
@@ -225,10 +247,11 @@ export default function ChatPage() {
 
               <div className="ml-3">
                 <div className="flex items-center gap-2">
-                  <h2 className="font-medium">{recipientUsername}</h2>
+                  <h2 className="font-medium">{recipientFullname}</h2>
+                  {isOnline && (
                   <Badge variant="default" className="h-5 px-1.5 text-[10px]">
                     Online
-                  </Badge>
+                  </Badge>)}
                 </div>
                 <p className="text-xs text-muted-foreground">@{recipientUsername}</p>
               </div>

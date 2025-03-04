@@ -34,42 +34,58 @@ export function ChatWindow({
   onImageClick,
   currentUserId,
 }: ChatWindowProps) {
+  const containerRef = useRef<HTMLDivElement>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const observerRef = useRef<IntersectionObserver | null>(null)
   const loadMoreRef = useRef<HTMLDivElement>(null)
+  const isFetchingRef = useRef(false) // new flag
 
-  // Scroll to bottom on new messages
+  // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     if (messages.length > 0 && messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: "smooth" })
     }
   }, [messages])
 
-  // Set up intersection observer for infinite scrolling
+  // Set up intersection observer using containerRef as root.
   useEffect(() => {
     if (observerRef.current) {
       observerRef.current.disconnect()
     }
-
-    observerRef.current = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && hasMore && !loading) {
-          onLoadMore()
-        }
-      },
-      { threshold: 0.5 },
-    )
-
+    if (!containerRef.current) return
+  
+    observerRef.current = new IntersectionObserver((entries) => {
+      const entry = entries[0]
+      // Only trigger onLoadMore when container is near top,
+      // at least one message exists, no current fetch in progress, and scrollTop is very small.
+      if (
+        entry.isIntersecting &&
+        hasMore &&
+        !loading &&
+        !isFetchingRef.current &&
+        containerRef.current!.scrollTop < 20 &&
+        messages.length > 0
+      ) {
+        isFetchingRef.current = true
+        onLoadMore()
+      }
+    }, { root: containerRef.current, threshold: 0.5 })
+  
     if (loadMoreRef.current) {
       observerRef.current.observe(loadMoreRef.current)
     }
-
+  
     return () => {
-      if (observerRef.current) {
-        observerRef.current.disconnect()
-      }
+      if (observerRef.current) observerRef.current.disconnect()
     }
-  }, [hasMore, loading, onLoadMore])
+  }, [hasMore, loading, onLoadMore, messages])
+
+  // Reset isFetching after messages change (fetch finished)
+  useEffect(() => {
+    if (!loading) {
+      isFetchingRef.current = false
+    }
+  }, [loading])
 
   // Group messages by date
   const groupedMessages = messages.reduce(
@@ -88,17 +104,17 @@ export function ChatWindow({
   const sortedDates = Object.keys(groupedMessages).sort((a, b) => new Date(a).getTime() - new Date(b).getTime())
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 flex flex-col">
+    <div ref={containerRef} className="flex-1 overflow-y-auto overflow-x-hidden p-4 flex flex-col max-w-full">
       {/* Load more trigger */}
       {hasMore && (
         <div ref={loadMoreRef} className="flex justify-center py-2 mb-4">
           {loading ? (
-            <Button variant="ghost" disabled className="rounded-full">
+            <Button variant="ghost" disabled className="rounded-full whitespace-nowrap">
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
               Loading older messages
             </Button>
           ) : (
-            <Button variant="outline" onClick={onLoadMore} size="sm" className="rounded-full">
+            <Button variant="outline" onClick={onLoadMore} size="sm" className="rounded-full whitespace-nowrap">
               Load older messages
             </Button>
           )}
@@ -107,10 +123,10 @@ export function ChatWindow({
 
       {/* Messages grouped by date */}
       {sortedDates.map((date) => (
-        <div key={date} className="mb-6">
+        <div key={date} className="mb-6 max-w-full">
           <div className="flex items-center justify-center mb-4">
             <Separator className="flex-grow" />
-            <span className="mx-4 text-xs font-medium text-muted-foreground bg-background px-2 py-1 rounded-full">
+            <span className="mx-4 text-xs font-medium text-muted-foreground bg-background px-2 py-1 rounded-full whitespace-nowrap">
               {new Date(date).toLocaleDateString(undefined, {
                 weekday: "long",
                 month: "short",

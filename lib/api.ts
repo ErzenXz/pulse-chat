@@ -41,6 +41,9 @@ const fetchWithAuth = async (
   }
 };
 
+export const getUserStatus = (username: string) => {
+  return fetchWithAuth(`/messaging/userInfo/${username}`);
+};
 // API functions for conversations
 export const getConversations = () => {
   return fetchWithAuth("/messaging/conversations");
