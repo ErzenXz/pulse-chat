@@ -1,9 +1,9 @@
-"use client";
+"use client"
 
 import React from "react"
 import AuthGuard from "@/app/middlewares/auth.guard"
 
-export default function ConversationsLayout({
+export default function SettingsLayout({
   children,
 }: {
   children: React.ReactNode
@@ -13,4 +13,4 @@ export default function ConversationsLayout({
       {children}
     </AuthGuard>
   )
-}
+} 

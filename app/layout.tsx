@@ -5,6 +5,7 @@ import { ThemeProvider } from '@/components/theme-provider';
 import { Toaster } from '@/components/ui/toaster';
 import { Toaster as SonnerToaster } from '@/components/ui/sonner';
 import { AuthProvider } from '@/context/auth-context';
+import AuthGuard from "./middlewares/auth.guard";
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -21,10 +22,11 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
-
-        <ThemeProvider defaultTheme="system" storageKey="erzen-theme">
-        <AuthProvider>
-            {children}
+        <ThemeProvider>
+          <AuthProvider>
+            <AuthGuard requireAuth={false}>
+              {children}
+            </AuthGuard>
             <Toaster />
             <SonnerToaster />
           </AuthProvider>

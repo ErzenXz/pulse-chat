@@ -1,7 +1,7 @@
 // IndexedDB utility for caching messages and conversations
 
 const DB_NAME = "pulseChat";
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const MESSAGES_STORE = "messages";
 const CONVERSATIONS_STORE = "conversations";
 
@@ -21,8 +21,8 @@ interface DBConversation {
   fullName: string;
   profilePicture: string;
   lastMessage: string;
-  timestamp: string;
-  unreadCount: number;
+  lastChat: string;
+  hasSeen: boolean;
 }
 
 // Initialize the database
@@ -161,7 +161,7 @@ export const getConversationsFromDB = async (): Promise<DBConversation[]> => {
         // Sort conversations by timestamp (newest first)
         conversations.sort(
           (a, b) =>
-            new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+            new Date(b.lastChat).getTime() - new Date(a.lastChat).getTime()
         );
         resolve(conversations);
       };

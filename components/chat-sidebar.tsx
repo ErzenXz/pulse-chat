@@ -13,6 +13,7 @@ import { Search, Settings, Menu, Users, Moon, Sun, LogOut } from "lucide-react"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 import { storeConversations, getConversationsFromDB } from "@/lib/indexeddb"
+import { ThemeSelector } from "@/components/theme-selector"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -27,8 +28,8 @@ interface Conversation {
   fullName: string
   profilePicture: string
   lastMessage: string
-  timestamp: string
-  unreadCount: number
+  lastChat: string
+  hasSeen: boolean
 }
 
 interface User {
@@ -60,7 +61,7 @@ export function ChatSidebar({ currentChatId }: ChatSidebarProps) {
       const cachedConversations = await getConversationsFromDB()
       
       if (cachedConversations.length > 0) {
-        setConversations(cachedConversations)
+        setConversations(cachedConversations as unknown as Conversation[])
         return true
       }
       return false
@@ -134,14 +135,15 @@ export function ChatSidebar({ currentChatId }: ChatSidebarProps) {
   }
 
   const handleUserSelect = (username: string) => {
-    router.push(`/chat/new?username=${username}`)
+    router.push(`/chat/new?username=${username}`, { scroll: false })
     setSearchQuery("")
     setSearchResults([])
     setIsSearching(false)
   }
 
   const handleConversationSelect = (id: string, username: string) => {
-    router.push(`/chat/${id}?username=${username}`)
+    // Pass scroll: false as the second parameter to prevent page refresh effect
+    router.push(`/chat/${id}?username=${username}`, { scroll: false })
     setIsMobileSidebarOpen(false)
   }
 
@@ -198,20 +200,7 @@ export function ChatSidebar({ currentChatId }: ChatSidebarProps) {
           <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-sm py-3 px-4 border-b flex items-center justify-between">
             <h2 className="text-xl font-semibold">Messages</h2>
             <div className="flex items-center gap-1">
-              {/* Direct theme toggle button */}
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-                className="rounded-full"
-              >
-                {theme === 'dark' ? (
-                  <Sun className="h-5 w-5" />
-                ) : (
-                  <Moon className="h-5 w-5" />
-                )}
-                <span className="sr-only">Toggle theme</span>
-              </Button>
+              <ThemeSelector />
               
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -319,9 +308,9 @@ export function ChatSidebar({ currentChatId }: ChatSidebarProps) {
                           {getInitials(conversation.fullName)}
                         </AvatarFallback>
                       </Avatar>
-                      {conversation.unreadCount > 0 && (
+                      {!conversation.hasSeen && (
                         <div className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-medium text-primary-foreground animate-pulse">
-                          {conversation.unreadCount}
+                          1
                         </div>
                       )}
                     </div>
@@ -329,7 +318,7 @@ export function ChatSidebar({ currentChatId }: ChatSidebarProps) {
                       <div className="flex items-center justify-between">
                         <h4 className="font-medium truncate">{conversation.fullName}</h4>
                         <span className="text-xs text-muted-foreground">
-                          {formatTimestamp(conversation.timestamp)}
+                          {formatTimestamp(conversation.lastChat)}
                         </span>
                       </div>
                       <p className="text-sm text-muted-foreground truncate">

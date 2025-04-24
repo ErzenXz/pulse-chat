@@ -19,6 +19,7 @@ import { storeMessages, getMessagesFromDB, addMessageToDB, deleteMessageFromDB }
 import io from "socket.io-client"
 import AuthGuard from "@/app/middlewares/auth.guard"
 import { motion, AnimatePresence } from "framer-motion"
+import { ThemeSelector } from "@/components/theme-selector"
 
 interface Message {
   id: string
@@ -218,9 +219,17 @@ export default function ChatPage() {
   }, [id, searchParams, fetchMessagesFromDB, fetchMessagesFromAPI, recipientUsername])
 
   const handleLoadMore = () => {
-    if (hasMore && !loading) {
-      fetchMessagesFromAPI(page + 1)
+    // Immediately check if loading or no more messages
+    if (loading || !hasMore) {
+      return; // Prevent multiple calls if already loading or no more messages
     }
+    
+    // Set loading to true *before* initiating the fetch
+    setLoading(true); 
+    
+    // Fetch next page
+    fetchMessagesFromAPI(page + 1); 
+    // fetchMessagesFromAPI will set loading back to false on completion/error
   }
 
   const emitTypingStatus = (isTyping: boolean) => {
@@ -438,6 +447,7 @@ export default function ChatPage() {
                   <span className="text-xs">Reconnecting...</span>
                 </Badge>
               )}
+              <ThemeSelector />
               <Button variant="ghost" size="icon" className="rounded-full">
                 <Phone className="h-5 w-5" />
                 <span className="sr-only">Voice call</span>
