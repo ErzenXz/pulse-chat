@@ -43,6 +43,7 @@ export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([])
   const [loading, setLoading] = useState(true)
   const [isLoadingFromCache, setIsLoadingFromCache] = useState(true)
+  const [isInitialLoad, setIsInitialLoad] = useState(true)
   const [page, setPage] = useState(1)
   const [hasMore, setHasMore] = useState(true)
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
@@ -54,6 +55,7 @@ export default function ChatPage() {
   const router = useRouter()
   const socketRef = useRef<any>(null)
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const messagesRef = useRef<Message[]>([])
 
   const fetchMessagesFromDB = useCallback(async () => {
     try {
@@ -71,6 +73,7 @@ export default function ChatPage() {
           username: msg.username
         }))
         
+        messagesRef.current = formattedCachedMessages
         setMessages(formattedCachedMessages)
         return true
       }
@@ -101,22 +104,31 @@ export default function ChatPage() {
         : []
 
       if (reset) {
-        setMessages(formattedMessages)
-        // Cache messages to IndexedDB
-        const messagesForDB: DBMessage[] = formattedMessages.map(msg => ({
-          ...msg,
-          conversationId: id.toString()
-        }));
-        await storeMessages(id.toString(), messagesForDB)
-      } else {
-        setMessages((prev) => [...formattedMessages, ...prev])
-        // Cache only if this is the first page
-        if (pageNum === 1) {
+        // Only update if the messages are different
+        if (JSON.stringify(formattedMessages) !== JSON.stringify(messagesRef.current)) {
+          messagesRef.current = formattedMessages
+          setMessages(formattedMessages)
+          // Cache messages to IndexedDB
           const messagesForDB: DBMessage[] = formattedMessages.map(msg => ({
             ...msg,
             conversationId: id.toString()
           }));
           await storeMessages(id.toString(), messagesForDB)
+        }
+      } else {
+        // Only update if there are new messages
+        const newMessages = [...formattedMessages, ...messagesRef.current]
+        if (JSON.stringify(newMessages) !== JSON.stringify(messagesRef.current)) {
+          messagesRef.current = newMessages
+          setMessages(newMessages)
+          // Cache only if this is the first page
+          if (pageNum === 1) {
+            const messagesForDB: DBMessage[] = formattedMessages.map(msg => ({
+              ...msg,
+              conversationId: id.toString()
+            }));
+            await storeMessages(id.toString(), messagesForDB)
+          }
         }
       }
 
@@ -127,6 +139,7 @@ export default function ChatPage() {
       toast.error("Failed to load messages")
     } finally {
       setLoading(false)
+      setIsInitialLoad(false)
     }
   }, [id])
 

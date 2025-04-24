@@ -42,6 +42,7 @@ export function ChatWindow({
   const [isInitialLoad, setIsInitialLoad] = useState(true)
   const [lastMessageId, setLastMessageId] = useState("")
   const lastMessageCountRef = useRef(0)
+  const [isTransitioning, setIsTransitioning] = useState(false)
 
   // Handle scrolling based on different scenarios
   useEffect(() => {
@@ -193,15 +194,20 @@ export function ChatWindow({
       )}
 
       {/* Messages grouped by date */}
-      <AnimatePresence initial={false}>
+      <AnimatePresence initial={false} mode="popLayout">
         {sortedDates.map((date) => (
           <motion.div 
             key={date} 
             className="mb-6 max-w-full"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ 
+              duration: 0.2,
+              type: "spring",
+              stiffness: 300,
+              damping: 30
+            }}
           >
             <div className="flex items-center justify-center mb-4">
               <Separator className="flex-grow" />
@@ -215,14 +221,19 @@ export function ChatWindow({
               <Separator className="flex-grow" />
             </div>
 
-            <AnimatePresence initial={false}>
+            <AnimatePresence initial={false} mode="popLayout">
               {groupedMessages[date].map((message) => (
                 <motion.div
                   key={message.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, height: 0 }}
-                  transition={{ duration: 0.2 }}
+                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ 
+                    duration: 0.15,
+                    type: "spring",
+                    stiffness: 400,
+                    damping: 30
+                  }}
                 >
                   <MessageBubble
                     key={message.id}
@@ -241,8 +252,9 @@ export function ChatWindow({
       {/* Empty state */}
       {!loading && messages.length === 0 && (
         <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
           className="flex-1 flex flex-col items-center justify-center"
         >
           <div className="rounded-full bg-primary/10 p-6 mb-4">
